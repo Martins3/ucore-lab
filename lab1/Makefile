@@ -3,10 +3,11 @@ EMPTY	:=
 SPACE	:= $(EMPTY) $(EMPTY)
 SLASH	:= /
 
-V       := @
+V       := @ # change this to empty, and we know what make is doing !
 #need llvm/cang-3.5+
 #USELLVM := 1
 # try to infer the correct GCCPREFX
+# why it din't infer the error and just let things break down at elf64
 ifndef GCCPREFIX
 GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
 	then echo 'i386-elf-'; \
@@ -96,7 +97,7 @@ create_target_cc = $(call create_target,$(1),$(2),$(3),$(CC),$(CFLAGS))
 add_files_host = $(call add_files,$(1),$(HOSTCC),$(HOSTCFLAGS),$(2),$(3))
 create_target_host = $(call create_target,$(1),$(2),$(3),$(HOSTCC),$(HOSTCFLAGS))
 
-cgtype = $(patsubst %.$(2),%.$(3),$(1))
+cgtype = $(patsubst %.$(2),%.$(3),$(1)) # change file type
 objfile = $(call toobj,$(1))
 asmfile = $(call cgtype,$(call toobj,$(1)),o,asm)
 outfile = $(call cgtype,$(call toobj,$(1)),o,out)
@@ -151,6 +152,7 @@ $(kernel): $(KOBJS)
 $(call create_target,kernel)
 
 # -------------------------------------------------------------------
+
 
 # create bootblock
 bootfiles = $(call listf_cc,boot)

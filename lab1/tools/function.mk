@@ -4,6 +4,7 @@ OBJPREFIX	:= __objs_
 # -------------------- function begin --------------------
 
 # list all files in some directories: (#directories, #types)
+# if second parameter is given, then list specific type, else list all the file
 listf = $(filter $(if $(2),$(addprefix %.,$(2)),%),\
 		  $(wildcard $(addsuffix $(SLASH)*,$(1))))
 
@@ -19,6 +20,13 @@ totarget = $(addprefix $(BINDIR)$(SLASH),$(1))
 # change $(name) to $(OBJPREFIX)$(name): (#names)
 packetname = $(if $(1),$(addprefix $(OBJPREFIX),$(1)),$(OBJPREFIX))
 
+# caution about the $ and $$
+# call will substitude the parameter, change all the $(num)
+# it will also eval the $$ to $
+# the reason why there are is $$ may be that we want to call the function twice
+# as we see later, this function indeed called two level
+
+# define some functions
 # cc compile template, generate rule for dep, obj: (file, cc[, flags, dir])
 define cc_template
 $$(call todep,$(1),$(4)): $(1) | $$$$(dir $$$$@)
@@ -74,6 +82,9 @@ $$(sort $$(dir $$(ALLOBJS)) $(BINDIR)$(SLASH) $(OBJDIR)$(SLASH)):
 	@$(MKDIR) $$@
 endef
 
+# call --> parameter substitude
+# eval --> execute the recipe
+# 
 # --------------------  function end  --------------------
 # compile file: (#files, cc[, flags, dir])
 cc_compile = $(eval $(call do_cc_compile,$(1),$(2),$(3),$(4)))
