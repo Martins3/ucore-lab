@@ -4,6 +4,7 @@
 /* Assembler macros to create x86 segments */
 
 /* Normal segment */
+// TODO why .word has ; but .byte not
 #define SEG_NULLASM                                                            \
   .word 0, 0;                                                                  \
   .byte 0, 0, 0, 0

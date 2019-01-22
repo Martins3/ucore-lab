@@ -1276,6 +1276,7 @@ vector255:
   jmp __alltraps
 
 # vector table
+# .data means what ?
 .data
 .globl __vectors
 __vectors:

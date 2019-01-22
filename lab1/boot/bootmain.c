@@ -98,6 +98,7 @@ void bootmain(void) {
     readseg(ph->p_va & 0xFFFFFF, ph->p_memsz, ph->p_offset);
   }
 
+  // fuck we have to read the Makefile again
   // call the entry point from the ELF header
   // note: does not return
   ((void (*)(void))(ELFHDR->e_entry & 0xFFFFFF))();

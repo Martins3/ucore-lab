@@ -240,6 +240,7 @@ void print_debuginfo(uintptr_t eip) {
   }
 }
 
+// TODO _noinline is what the fuck
 static __noinline uint32_t read_eip(void) {
   uint32_t eip;
   asm volatile("movl 4(%%ebp), %0" : "=r"(eip));
@@ -283,6 +284,8 @@ static __noinline uint32_t read_eip(void) {
  * jumping to the kernel entry, the value of ebp has been set to zero, that's
  * the boundary.
  * */
+// TODO it seems that even the answer has some problem, maybe we need gcc-7
+// or maybe some different strategy for clang
 void print_stackframe(void) {
   /* LAB1 YOUR CODE : STEP 1 */
   /* (1) call read_ebp() to get the value of ebp. the type is (uint32_t);
@@ -290,10 +293,25 @@ void print_stackframe(void) {
    * (3) from 0 .. STACKFRAME_DEPTH
    *    (3.1) printf value of ebp, eip
    *    (3.2) (uint32_t)calling arguments [0..4] = the contents in address
-   * (uint32_t)ebp +2 [0..4] (3.3) cprintf("\n"); (3.4) call
-   * print_debuginfo(eip-1) to print the C calling function name and line
-   * number, etc. (3.5) popup a calling stackframe NOTICE: the calling
+   * (uint32_t)ebp +2 [0..4] (3.3) cprintf("\n");
+   * (3.4) call print_debuginfo(eip-1) to print the C calling function name and
+   * line number, etc.
+   * (3.5) popup a calling stackframe NOTICE: the calling
    * funciton's return addr eip  = ss:[ebp+4] the calling funciton's ebp =
    * ss:[ebp]
    */
+  uint32_t ebp = read_ebp();
+  uint32_t eip = read_eip();
+  for (int i = 0; i < STACKFRAME_DEPTH; ++i) {
+    cprintf("ebp: 0x%08x ", ebp);
+    cprintf("eip: 0x%08x ", eip);
+    cprintf("args: 0x%08x 0x%08x 0x%08x 0x%08x", *((uint32_t *)(ebp) + 2),
+            *((uint32_t *)(ebp) + 3), *((uint32_t *)(ebp) + 4), *((uint32_t *)(ebp) + 5));
+    cprintf("\n");
+    print_debuginfo(eip - 1);
+    // update the eip and ebp to get the 
+    eip = *((uint32_t *)(ebp) + 1);
+    ebp = *((uint32_t *)(ebp));
+    if(ebp == 0) break;
+  }
 }

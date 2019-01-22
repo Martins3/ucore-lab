@@ -15,7 +15,7 @@ static void lab1_switch_test(void);
 
 int kern_init(void) {
   extern char edata[], end[];
-  memset(edata, 0, end - edata);
+  memset(edata, 0, end - edata); // TODO why we should clear this area
 
   cons_init(); // init the console
 

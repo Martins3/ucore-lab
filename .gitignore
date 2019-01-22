@@ -55,3 +55,6 @@ lab[0-6]/bin/*
 lab[0-6]/obj/*
 
 compile_commands.json
+lab[0-6]/GPATH
+lab[0-6]/GRTAGS
+lab[0-6]/GTAGS

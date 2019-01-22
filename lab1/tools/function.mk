@@ -1,3 +1,4 @@
+# so why should add __objs_
 OBJPREFIX	:= __objs_
 
 .SECONDEXPANSION:
@@ -5,6 +6,7 @@ OBJPREFIX	:= __objs_
 
 # list all files in some directories: (#directories, #types)
 # if second parameter is given, then list specific type, else list all the file
+
 listf = $(filter $(if $(2),$(addprefix %.,$(2)),%),\
 		  $(wildcard $(addsuffix $(SLASH)*,$(1))))
 
@@ -41,6 +43,10 @@ endef
 define do_cc_compile
 $$(foreach f,$(1),$$(eval $$(call cc_template,$$(f),$(2),$(3),$(4))))
 endef
+
+# this files worked together ?
+# and why we need packet and the stupid OBJPREFIX
+
 
 # add files to packet: (#files, cc[, flags, packet, dir])
 define do_add_files_to_packet
@@ -103,4 +109,3 @@ read_packet = $(foreach p,$(call packetname,$(1)),$($(p)))
 add_dependency = $(eval $(1): $(2))
 
 finish_all = $(eval $(call do_finish_all))
-

@@ -5,9 +5,10 @@ SLASH	:= /
 
 V       := @ # change this to empty, and we know what make is doing !
 #need llvm/cang-3.5+
-#USELLVM := 1
+# USELLVM := 1
 # try to infer the correct GCCPREFX
-# why it din't infer the error and just let things break down at elf64
+# but it failed, and didn't report the error
+# it seems that I don't understand something clearly.
 ifndef GCCPREFIX
 GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/null 2>&1; \
 	then echo 'i386-elf-'; \
@@ -22,6 +23,7 @@ GCCPREFIX := $(shell if i386-elf-objdump -i 2>&1 | grep '^elf32-i386$$' >/dev/nu
 	echo "*** To turn off this error, run 'gmake GCCPREFIX= ...'." 1>&2; \
 	echo "***" 1>&2; exit 1; fi)
 endif
+
 
 # try to infer the correct QEMU
 ifndef QEMU
@@ -150,12 +152,11 @@ $(kernel): $(KOBJS)
 	@$(OBJDUMP) -t $@ | $(SED) '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $(call symfile,kernel)
 
 $(call create_target,kernel)
-
 # -------------------------------------------------------------------
 
 
 # create bootblock
-bootfiles = $(call listf_cc,boot)
+bootfiles = $(call listf_cc,boot) # get all the files under `boot` dir
 $(foreach f,$(bootfiles),$(call cc_compile,$(f),$(CC),$(CFLAGS) -Os -nostdinc))
 
 bootblock = $(call totarget,bootblock)
@@ -168,14 +169,14 @@ $(bootblock): $(call toobj,$(bootfiles)) | $(call totarget,sign)
 	@$(call totarget,sign) $(call outfile,bootblock) $(bootblock)
 
 $(call create_target,bootblock)
-
 # -------------------------------------------------------------------
+
 
 # create 'sign' tools
 $(call add_files_host,tools/sign.c,sign,sign)
 $(call create_target_host,sign,sign)
-
 # -------------------------------------------------------------------
+
 
 # create ucore.img
 UCOREIMG	:= $(call totarget,ucore.img)
@@ -217,7 +218,7 @@ log: $(UCOREIMG)
 	$(V)$(QEMU) -no-reboot -d int,cpu_reset  -D q.log -parallel stdio -hda $< -serial null
 qemu-nox: $(UCOREIMG)
 	$(V)$(QEMU)   -no-reboot -serial mon:stdio -hda $< -nographic
-TERMINAL        :=gnome-terminal
+TERMINAL        :=deepin-terminal
 debug: $(UCOREIMG)
 	$(V)$(QEMU) -S -s -parallel stdio -hda $< -serial null &
 	$(V)sleep 2

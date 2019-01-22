@@ -14,9 +14,9 @@
 start:
 .code16                                             # Assemble for 16-bit mode
     cli                                             # Disable interrupts
-    cld                                             # String operations increment
+    cld                                             # String operations increment # TODO
 
-    # Set up the important data segment registers (DS, ES, SS).
+    # Set up the important data segment registers (DS, ES, SS). TODO what if i don't set up this !
     xorw %ax, %ax                                   # Segment number zero
     movw %ax, %ds                                   # -> Data Segment
     movw %ax, %es                                   # -> Extra Segment
@@ -75,12 +75,15 @@ spin:
     jmp spin
 
 # Bootstrap GDT
+# TODO .p2align is what ?
+# TODO we should read the gdt table and find out the structure
 .p2align 2                                          # force 4 byte alignment
 gdt:
     SEG_NULLASM                                     # null seg
     SEG_ASM(STA_X|STA_R, 0x0, 0xffffffff)           # code seg for bootloader and kernel
     SEG_ASM(STA_W, 0x0, 0xffffffff)                 # data seg for bootloader and kernel
 
+# TODO why is sizeof(gdt)-1 RTFM
 gdtdesc:
     .word 0x17                                      # sizeof(gdt) - 1
     .long gdt                                       # address gdt
