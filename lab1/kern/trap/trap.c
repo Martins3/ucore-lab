@@ -50,10 +50,15 @@ void idt_init(void) {
    * instruction? just google it! and check the libs/x86.h to know more. Notice:
    * the argument of lidt is idt_pd. try to find it!
    */
-  extern uintptr_t __vectors[];
 
-  // idt[0x80] = GATE(STS_TG32, KSEL(SEG_KCODE), vecsys, DPL_KERN);
-  SETGATE(idt[0x80], 0, 0 ,__vectors + 0x80 , DPL_USER); // init syscall
+  // we should understand what happened for
+  extern uintptr_t __vectors[];
+  for (int i = 0; i < 256; ++i) {
+    uintptr_t DPL_FLAG = DPL_KERNEL;
+    if(i == 0x80)
+      DPL_FLAG = DPL_USER;
+    SETGATE(idt[i], 0, 0x08, __vectors[i], DPL_FLAG); // init syscall
+  }
   lidt(&idt_pd);
 }
 
@@ -154,7 +159,10 @@ static void trap_dispatch(struct trapframe *tf) {
      * (3) Too Simple? Yes, I think so!
      */
     ticks ++;
-    print_ticks();
+    if(ticks == TICK_NUM){
+      ticks = 0;
+      print_ticks();
+    }
     break;
   case IRQ_OFFSET + IRQ_COM1:
     c = cons_getc();

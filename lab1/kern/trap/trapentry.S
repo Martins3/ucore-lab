@@ -24,7 +24,8 @@ __alltraps:
     call trap
 
     # pop the pushed stack pointer
-    popl %esp
+    ; popl %esp
+    mov %eax, %esp
 
     # return falls through to trapret...
 .globl __trapret
