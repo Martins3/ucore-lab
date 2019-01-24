@@ -1,6 +1,7 @@
 #include <pmm.h>
 #include <list.h>
 #include <string.h>
+#include <stdio.h>
 #include <default_pmm.h>
 
 /*  In the First Fit algorithm, the allocator keeps a list of free blocks
@@ -121,7 +122,9 @@ default_init_memmap(struct Page *base, size_t n) {
     base->property = n;
     SetPageProperty(base);
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+    // change 2
+    list_entry_t * list_end = list_prev(&free_list);
+    list_add(list_end, &(base->page_link));
 }
 
 static struct Page *
@@ -141,13 +144,19 @@ default_alloc_pages(size_t n) {
         }
     }
 
+    if(page == NULL){
+      cprintf("Emmm, seems impossible\n");
+    }
+
     if (page != NULL) {
         list_del(&(page->page_link));
         // if we have pages left, then get the small part memory and create a new node
         if (page->property > n) {
             struct Page *p = page + n;
             p->property = page->property - n;
-            list_add(&free_list, &(p->page_link));
+            // change 1: new added should not simply added to headed !
+            list_entry_t * before_page = list_prev(&(page->page_link));
+            list_add(before_page, &(p->page_link));
         }
         nr_free -= n;
         ClearPageProperty(page);
@@ -187,7 +196,14 @@ default_free_pages(struct Page *base, size_t n) {
         }
     }
     nr_free += n;
-    list_add(&free_list, &(base->page_link));
+    // change 3:
+    le = list_next(&free_list);
+    while (le != &free_list) {
+        p = le2page(le, page_link);
+        le = list_next(le);
+        if(p > base) break;
+    }
+    list_add_before(le, &(base->page_link));
 }
 
 static size_t

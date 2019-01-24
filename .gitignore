@@ -58,3 +58,6 @@ compile_commands.json
 lab[0-6]/GPATH
 lab[0-6]/GRTAGS
 lab[0-6]/GTAGS
+
+.check_output.log
+.gdb.in
