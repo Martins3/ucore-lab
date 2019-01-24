@@ -189,6 +189,8 @@ nr_free_pages(void) {
 /* pmm_init - initialize the physical memory management */
 static void
 page_init(void) {
+    // hardware init memmap
+    // TODO: why where is the KERNBASE
     struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
     uint64_t maxpa = 0;
 
@@ -208,17 +210,34 @@ page_init(void) {
         maxpa = KMEMSIZE;
     }
 
+    // fuck it ld again, I can not understand this
+    // end and eend is lower and upper bound of bss
     extern char end[];
 
+    // it seems that we want map all the kernel memory
+    // so why should we round up or round down this !
+    // pages is at the **end**;
+    // so where is the fucking end, and where is the 
+
+    // the space is overlapped or not ?
+    // TODO and why should made pages ROUNDUP
+
     npage = maxpa / PGSIZE;
+    // cprintf("there are %d pages should be remap\n", npage);
     pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);
 
     for (i = 0; i < npage; i ++) {
         SetPageReserved(pages + i);
     }
 
+    // clear, up to the freemem is the up to here
     uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
 
+    // shit We dive into the Remapped Physical Memory again
+    // every huge area is with many blogs
+    // it seems that bios memory map should be set with all the map
+    // It still can not understand bios have some many kinds of map for one memory
+    // in fact, only one map is enough
     for (i = 0; i < memmap->nr_map; i ++) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
         if (memmap->map[i].type == E820_ARM) {
@@ -231,6 +250,9 @@ page_init(void) {
             if (begin < end) {
                 begin = ROUNDUP(begin, PGSIZE);
                 end = ROUNDDOWN(end, PGSIZE);
+                cprintf("  memory: %08llx, [%08llx, %08llx], type = %d.\n",
+                        memmap->map[i].size, begin, end - 1, memmap->map[i].type);
+                cprintf("mem %d pages: \n", (end - begin) / PGSIZE);
                 if (begin < end) {
                     init_memmap(pa2page(begin), (end - begin) / PGSIZE);
                 }
@@ -274,6 +296,7 @@ boot_alloc_page(void) {
 //         - check the correctness of pmm & paging mechanism, print PDT&PT
 void
 pmm_init(void) {
+    // enable paging, by what, and is what ?
     // We've already enabled paging
     boot_cr3 = PADDR(boot_pgdir);
 

@@ -29,10 +29,12 @@
  * special struct (such as struct `page`), using the following MACROs: `le2page`
  * (in memlayout.h), (and in future labs: `le2vma` (in vmm.h), `le2proc` (in
  * proc.h), etc).
+ *
  * (2) `default_init`:
  *  You can reuse the demo `default_init` function to initialize the `free_list`
  * and set `nr_free` to 0. `free_list` is used to record the free memory blocks.
  * `nr_free` is the total number of the free memory blocks.
+ *
  * (3) `default_init_memmap`:
  *  CALL GRAPH: `kern_init` --> `pmm_init` --> `page_init` --> `init_memmap` -->
  * `pmm_manager` --> `init_memmap`.
@@ -51,6 +53,7 @@
  *  After that, We can use `p->page_link` to link this page into `free_list`.
  * (e.g.: `list_add_before(&free_list, &(p->page_link));` )
  *  Finally, we should update the sum of the free memory blocks: `nr_free += n`.
+ *
  * (4) `default_alloc_pages`:
  *  Search for the first free block (block size >= n) in the free list and reszie
  * the block found, returning the address of this block as the address required by
@@ -80,6 +83,7 @@
  *              return `p`.
  *      (4.2)
  *          If we can not find a free block with its size >=n, then return NULL.
+ *
  * (5) `default_free_pages`:
  *  re-link the pages into the free list, and may merge small free blocks into
  * the big ones.
@@ -93,6 +97,7 @@
  *      Try to merge blocks at lower or higher addresses. Notice: This should
  *  change some pages' `p->property` correctly.
  */
+
 free_area_t free_area;
 
 #define free_list (free_area.free_list)
@@ -127,6 +132,7 @@ default_alloc_pages(size_t n) {
     }
     struct Page *page = NULL;
     list_entry_t *le = &free_list;
+    // find a page until it can meet the size requirement
     while ((le = list_next(le)) != &free_list) {
         struct Page *p = le2page(le, page_link);
         if (p->property >= n) {
@@ -134,13 +140,15 @@ default_alloc_pages(size_t n) {
             break;
         }
     }
+
     if (page != NULL) {
         list_del(&(page->page_link));
+        // if we have pages left, then get the small part memory and create a new node
         if (page->property > n) {
             struct Page *p = page + n;
             p->property = page->property - n;
             list_add(&free_list, &(p->page_link));
-    }
+        }
         nr_free -= n;
         ClearPageProperty(page);
     }
@@ -150,15 +158,19 @@ default_alloc_pages(size_t n) {
 static void
 default_free_pages(struct Page *base, size_t n) {
     assert(n > 0);
+    // make sure the pages to be free is valid
     struct Page *p = base;
     for (; p != base + n; p ++) {
         assert(!PageReserved(p) && !PageProperty(p));
+        // maybe we should read the doc of struct pages more carefully
         p->flags = 0;
         set_page_ref(p, 0);
     }
+
     base->property = n;
     SetPageProperty(base);
     list_entry_t *le = list_next(&free_list);
+    // merge if possible
     while (le != &free_list) {
         p = le2page(le, page_link);
         le = list_next(le);

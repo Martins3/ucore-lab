@@ -7,6 +7,7 @@ ENTRY(kern_entry)
 
 SECTIONS {
     /* Load the kernel at this address: "." means the current address */
+    /* it seems that bios rom will at 10000*/
     . = 0xC0100000;
 
     .text : {

@@ -3,6 +3,12 @@
 
 #define REALLOC(x) (x - KERNBASE)
 
+# kern_entry函数的主要任务是为执行kern_init
+# 建立一个良好的C语言运行环境（设置堆栈），
+# 而且临时建立了一个段映射关系，
+# 为之后建立分页机制的过程做一个准备
+#（细节在3.5小节有进一步阐述）
+
 .text
 .globl kern_entry
 kern_entry:
