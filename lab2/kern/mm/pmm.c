@@ -190,7 +190,6 @@ nr_free_pages(void) {
 static void
 page_init(void) {
     // hardware init memmap
-    // TODO: why where is the KERNBASE
     struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
     uint64_t maxpa = 0;
 
@@ -250,9 +249,6 @@ page_init(void) {
             if (begin < end) {
                 begin = ROUNDUP(begin, PGSIZE);
                 end = ROUNDDOWN(end, PGSIZE);
-                cprintf("  memory: %08llx, [%08llx, %08llx], type = %d.\n",
-                        memmap->map[i].size, begin, end - 1, memmap->map[i].type);
-                cprintf("mem %d pages: \n", (end - begin) / PGSIZE);
                 if (begin < end) {
                     init_memmap(pa2page(begin), (end - begin) / PGSIZE);
                 }
@@ -267,6 +263,7 @@ page_init(void) {
 //  size: memory size
 //  pa:   physical address of this memory
 //  perm: permission of this memory  
+//  TODO why nobody call this function, and what's purpose of it
 static void
 boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, uintptr_t pa, uint32_t perm) {
     assert(PGOFF(la) == PGOFF(pa));
@@ -282,7 +279,8 @@ boot_map_segment(pde_t *pgdir, uintptr_t la, size_t size, uintptr_t pa, uint32_t
 
 //boot_alloc_page - allocate one page using pmm->alloc_pages(1) 
 // return value: the kernel virtual address of this allocated page
-//note: this function is used to get the memory for PDT(Page Directory Table)&PT(Page Table)
+// note: this function is used to get the memory for
+// PDT(Page Directory Table)&PT(Page Table)
 static void *
 boot_alloc_page(void) {
     struct Page *p = alloc_page();
@@ -370,18 +368,32 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
      *   PTE_W           0x002                   // page table/directory entry flags bit : Writeable
      *   PTE_U           0x004                   // page table/directory entry flags bit : User can access
      */
-#if 0
-    pde_t *pdep = NULL;   // (1) find page directory entry
-    if (0) {              // (2) check if entry is not present
-                          // (3) check if creating is needed, then alloc page for page table
-                          // CAUTION: this page is used for page table, not for common data page
-                          // (4) set page reference
-        uintptr_t pa = 0; // (5) get linear address of page
-                          // (6) clear page content using memset
-                          // (7) set page directory entry's permission
+    // (1) find page directory entry
+    pde_t *pdep = PDX(la) + pgdir;
+    uintptr_t pa;
+    // (2) check if directory entry is not present
+    if (!(*pdep & PTE_P)) {
+      // (3) check if creating is needed, then alloc page for page table
+      if(!create){
+        cprintf("Oh shit !\n");
+        return NULL;
+      }
+      // CAUTION: this page is used for page table, not for common data page
+      struct Page * page = alloc_page();
+      // (4) set page reference
+      set_page_ref(page, 1);
+      // (5) get linear address of page
+      pa = page2pa(page);
+      // (6) clear page content using memset
+      memset((void *)(KADDR(pa)), 0, PGSIZE); // TODO I can not understand virtual and physical address
+      // (7) set page directory entry's permission
+      *pdep = pa | (PTE_P | PTE_U | PTE_W);
+    }else{
+      pa = PTE_ADDR(*pdep);
     }
-    return NULL;          // (8) return page table entry
-#endif
+    // (8) return page table entry
+    // TODO so why should add KADDR
+    return (pte_t *)(PTE_ADDR(KADDR(pa))) + PTX(la);
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -418,15 +430,24 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
      * DEFINEs:
      *   PTE_P           0x001                   // page table/directory entry flags bit : Present
      */
-#if 0
-    if (0) {                      //(1) check if this page table entry is present
-        struct Page *page = NULL; //(2) find corresponding page to pte
-                                  //(3) decrease page reference
-                                  //(4) and free this page when page reference reachs 0
-                                  //(5) clear second page table entry
-                                  //(6) flush tlb
+    //(1) check if this page table entry is present
+    if (*ptep | PTE_P) {     
+      //(2) find corresponding page to pte
+      struct Page *page = pte2page(*ptep);
+      //(3) decrease page reference
+      page_ref_dec(page);
+      //(4) and free this page when page reference reachs 0
+      if(page->ref == 0){
+        free_pages(page, 1);
+        //(5) clear second page table entry
+        // pgdir[PDX(la)] = 0; // we should clear first directory entry
+        // TODO fix this line, critical warning about this line
+        // we can get ptep by la and pgdir, so why there are two parameters
+        *ptep = 0;
+        //(6) flush tlb
+        tlb_invalidate(pgdir, la);
+      }
     }
-#endif
 }
 
 //page_remove - free an Page which is related linear address la and has an validated pte
@@ -453,6 +474,7 @@ page_insert(pde_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
         return -E_NO_MEM;
     }
     page_ref_inc(page);
+    // already exist
     if (*ptep & PTE_P) {
         struct Page *p = pte2page(*ptep);
         if (p == page) {
@@ -462,10 +484,12 @@ page_insert(pde_t *pgdir, struct Page *page, uintptr_t la, uint32_t perm) {
             page_remove_pte(pgdir, la, ptep);
         }
     }
+    // this line unveil the answer
     *ptep = page2pa(page) | PTE_P | perm;
     tlb_invalidate(pgdir, la);
     return 0;
 }
+
 
 // invalidate a TLB entry, but only if the page tables being
 // edited are the ones currently in use by the processor.

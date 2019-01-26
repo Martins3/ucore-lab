@@ -144,10 +144,6 @@ default_alloc_pages(size_t n) {
         }
     }
 
-    if(page == NULL){
-      cprintf("Emmm, seems impossible\n");
-    }
-
     if (page != NULL) {
         list_del(&(page->page_link));
         // if we have pages left, then get the small part memory and create a new node
