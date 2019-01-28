@@ -8,12 +8,15 @@
 #include <mmu.h>
 
 // the valid vaddr for check is between 0~CHECK_VALID_VADDR-1
+// 
 #define CHECK_VALID_VIR_PAGE_NUM 5
+// but why should
 #define BEING_CHECK_VALID_VADDR 0X1000
 #define CHECK_VALID_VADDR (CHECK_VALID_VIR_PAGE_NUM+1)*0x1000
 // the max number of valid physical page for check
 #define CHECK_VALID_PHY_PAGE_NUM 4
 // the max access seq number
+// what this used for
 #define MAX_SEQ_NO 10
 
 static struct swap_manager *sm;
@@ -192,14 +195,17 @@ check_swap(void)
      struct mm_struct *mm = mm_create();
      assert(mm != NULL);
 
+     // check_mm_struct is temporary created for checking
      extern struct mm_struct *check_mm_struct;
      assert(check_mm_struct == NULL);
 
      check_mm_struct = mm;
 
      pde_t *pgdir = mm->pgdir = boot_pgdir;
+     // what is meaning of this line
      assert(pgdir[0] == 0);
 
+     // create one vma
      struct vma_struct *vma = vma_create(BEING_CHECK_VALID_VADDR, CHECK_VALID_VADDR, VM_WRITE | VM_READ);
      assert(vma != NULL);
 
@@ -221,7 +227,7 @@ check_swap(void)
      list_init(&free_list);
      assert(list_empty(&free_list));
      
-     //assert(alloc_page() == NULL);
+     // assert(alloc_page() == NULL);
      
      unsigned int nr_free_store = nr_free;
      nr_free = 0;

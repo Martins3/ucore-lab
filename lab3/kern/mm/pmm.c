@@ -367,7 +367,6 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     if (!(*pdep & PTE_P)) {
       // (3) check if creating is needed, then alloc page for page table
       if(!create){
-        cprintf("Oh shit !\n");
         return NULL;
       }
       // CAUTION: this page is used for page table, not for common data page

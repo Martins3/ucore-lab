@@ -240,6 +240,8 @@ static void
 check_pgfault(void) {
     size_t nr_free_pages_store = nr_free_pages();
 
+    // this must a temporay line
+    // we create a mm_struct for testing file
     check_mm_struct = mm_create();
     assert(check_mm_struct != NULL);
 
@@ -249,6 +251,7 @@ check_pgfault(void) {
 
     struct vma_struct *vma = vma_create(0, PTSIZE, VM_WRITE);
     assert(vma != NULL);
+
 
     insert_vma_struct(mm, vma);
 
@@ -260,6 +263,7 @@ check_pgfault(void) {
         *(char *)(addr + i) = i;
         sum += i;
     }
+
     for (i = 0; i < 100; i ++) {
         sum -= *(char *)(addr + i);
     }
@@ -308,11 +312,15 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     struct vma_struct *vma = find_vma(mm, addr);
 
     pgfault_num++;
-    //If the addr is in the range of a mm's vma?
+
+    // TODO find the code about how to init the vma, what if we can not init the vma
+    // correctly, the difference of initlization vma between kernel and user
+    // If the addr is in the range of a mm's vma?
     if (vma == NULL || vma->vm_start > addr) {
         cprintf("not valid addr %x, and  can not find it in vma\n", addr);
         goto failed;
     }
+
     //check the error_code
     switch (error_code & 3) {
     default:
@@ -338,6 +346,7 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
      * THEN
      *    continue process
      */
+
     uint32_t perm = PTE_U;
     if (vma->vm_flags & VM_WRITE) {
         perm |= PTE_W;
@@ -347,13 +356,18 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     ret = -E_NO_MEM;
 
     pte_t *ptep=NULL;
+    // 如果在此范围内并且权限也正确，这认为这是一次合法访问，
+    // 但没有建立虚实对应关系。所以需要分配一个空闲的内存页，
+    // 并修改页表完成虚地址到物理地址的映射，刷新TLB
+    
     /*LAB3 EXERCISE 1: YOUR CODE
     * Maybe you want help comment, BELOW comments can help you finish the code
     *
     * Some Useful MACROs and DEFINEs, you can use them in below implementation.
     * MACROs or Functions:
     *   get_pte : get an pte and return the kernel virtual address of this pte for la
-    *             if the PT contians this pte didn't exist, alloc a page for PT (notice the 3th parameter '1')
+    *             if the PT contians this pte didn't exist,
+    *             alloc a page for PT (notice the 3th parameter '1')
     *   pgdir_alloc_page : call alloc_page & page_insert functions to allocate a page size memory & setup
     *             an addr map pa<--->la with linear address la and the PDT pgdir
     * DEFINES:
@@ -362,18 +376,23 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     *   PTE_U           0x004                   // page table/directory entry flags bit : User can access
     * VARIABLES:
     *   mm->pgdir : the PDT of these vma
-    *
     */
-#if 0
-    /*LAB3 EXERCISE 1: YOUR CODE*/
-    ptep = ???              //(1) try to find a pte, if pte's PT(Page Table) isn't existed, then create a PT.
-    if (*ptep == 0) {
-                            //(2) if the phy addr isn't exist, then alloc a page & map the phy addr with logical addr
 
-    }
-    else {
+// #if 0
+    /*LAB3 EXERCISE 1: YOUR CODE*/
+    // (1) try to find a pte, if pte's PT(Page Table) isn't existed, then create a PT.
+    // (2) if the phy addr isn't exist,
+    //    then alloc a page & map the phy addr with logical addr
+    ptep = get_pte(mm->pgdir, addr, 1);
+
+    if (*ptep == 0) {
+      // TODO critical warning: permission, how to set that ?
+      // TODO question: why page fault doesn't have load disk
+      // TODO question: who trigger the syscall
+      pgdir_alloc_page(mm->pgdir, addr, perm);
+    } else {
     /*LAB3 EXERCISE 2: YOUR CODE
-    * Now we think this pte is a  swap entry, we should load data from disk to a page with phy addr,
+    * Now we think this pte is a swap entry, we should load data from disk to a page with phy addr,
     * and map the phy addr with logical addr, trigger swap manager to record the access situation of this page.
     *
     *  Some Useful MACROs and DEFINEs, you can use them in below implementation.
@@ -383,19 +402,22 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     *    page_insert ： build the map of phy addr of an Page with the linear addr la
     *    swap_map_swappable ： set the page swappable
     */
-        if(swap_init_ok) {
-            struct Page *page=NULL;
-                                    //(1）According to the mm AND addr, try to load the content of right disk page
-                                    //    into the memory which page managed.
-                                    //(2) According to the mm, addr AND page, setup the map of phy addr <---> logical addr
-                                    //(3) make the page swappable.
-        }
-        else {
-            cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
-            goto failed;
-        }
+    if(swap_init_ok) {
+        struct Page *page = NULL;
+        //(1）According to the mm AND addr, try to load the content of right disk page
+        //    into the memory which page managed.
+        swap_in(mm, addr, &page);
+        //(2) According to the mm, addr AND page, setup the map of phy addr <---> logical addr
+        page_insert(mm->pgdir, page, addr,  perm);
+        //(3) make the page swappable.
+        swap_map_swappable(mm, addr, page, 0);
+        // TODO we can not 
+        page->pra_vaddr = addr;
+    } else {
+        cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
+        goto failed;
+    }
    }
-#endif
    ret = 0;
 failed:
     return ret;
