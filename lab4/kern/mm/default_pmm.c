@@ -144,6 +144,7 @@ default_alloc_pages(size_t n) {
             p->property = page->property - n;
             // list_add(&free_list, &(p->page_link));
             // change 1: new added should not simply added to headed !
+            SetPageProperty(p);
             list_entry_t * before_page = list_prev(&(page->page_link));
             list_add(before_page, &(p->page_link));
     }
