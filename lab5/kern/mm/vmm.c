@@ -493,6 +493,41 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
         }
    }
 #endif
+    ptep = get_pte(mm->pgdir, addr, 1);
+
+    if (*ptep == 0) {
+      // TODO critical warning: permission, how to set that ?
+      // TODO question: why page fault doesn't have load disk
+      // TODO question: who trigger the syscall
+      pgdir_alloc_page(mm->pgdir, addr, perm);
+    } else {
+    /*LAB3 EXERCISE 2: YOUR CODE
+    * Now we think this pte is a swap entry, we should load data from disk to a page with phy addr,
+    * and map the phy addr with logical addr, trigger swap manager to record the access situation of this page.
+    *
+    *  Some Useful MACROs and DEFINEs, you can use them in below implementation.
+    *  MACROs or Functions:
+    *    swap_in(mm, addr, &page) : alloc a memory page, then according to the swap entry in PTE for addr,
+    *                               find the addr of disk page, read the content of disk page into this memroy page
+    *    page_insert ： build the map of phy addr of an Page with the linear addr la
+    *    swap_map_swappable ： set the page swappable
+    */
+    if(swap_init_ok) {
+        struct Page *page = NULL;
+        //(1）According to the mm AND addr, try to load the content of right disk page
+        //    into the memory which page managed.
+        swap_in(mm, addr, &page);
+        //(2) According to the mm, addr AND page, setup the map of phy addr <---> logical addr
+        page_insert(mm->pgdir, page, addr,  perm);
+        //(3) make the page swappable.
+        swap_map_swappable(mm, addr, page, 0);
+        // TODO we can not 
+        page->pra_vaddr = addr;
+    } else {
+        cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);
+        goto failed;
+    }
+   }
    ret = 0;
 failed:
     return ret;

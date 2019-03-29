@@ -56,6 +56,16 @@ idt_init(void) {
      /* LAB5 YOUR CODE */ 
      //you should update your lab1 code (just add ONE or TWO lines of code), let user app to use syscall to get the service of ucore
      //so you should setup the syscall interrupt gate in here
+     
+  // great at least we found the old code
+      extern uintptr_t __vectors[];
+      for (int i = 0; i < 256; ++i) {
+        uintptr_t DPL_FLAG = DPL_KERNEL;
+        if(i == 0x80)
+          DPL_FLAG = DPL_USER;
+        SETGATE(idt[i], 0, 0x08, __vectors[i], DPL_FLAG); // init syscall
+      }
+      lidt(&idt_pd);
 }
 
 static const char *
@@ -219,6 +229,12 @@ trap_dispatch(struct trapframe *tf) {
          * (2) Every TICK_NUM cycle, you can print some info using a funciton, such as print_ticks().
          * (3) Too Simple? Yes, I think so!
          */
+        ticks ++;
+        if(ticks == TICK_NUM){
+          ticks = 0;
+          print_ticks();
+        }
+
         /* LAB5 YOUR CODE */
         /* you should upate you lab1 code (just add ONE or TWO lines of code):
          *    Every TICK_NUM cycle, you should set current process's current->need_resched = 1
@@ -258,8 +274,9 @@ trap_dispatch(struct trapframe *tf) {
  * trap - handles or dispatches an exception/interrupt. if and when trap() returns,
  * the code in kern/trap/trapentry.S restores the old CPU state saved in the
  * trapframe and then uses the iret instruction to return from the exception.
+ * FIXME 我开始怀疑，之前才此处填写的代码都是含有问题的。
  * */
-void
+struct trapframe *
 trap(struct trapframe *tf) {
     // dispatch based on what type of trap occurred
     // used for previous projects
@@ -285,5 +302,6 @@ trap(struct trapframe *tf) {
             }
         }
     }
+    return tf;
 }
 

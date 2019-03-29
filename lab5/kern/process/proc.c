@@ -109,7 +109,19 @@ alloc_proc(void) {
      *       uint32_t wait_state;                        // waiting state
      *       struct proc_struct *cptr, *yptr, *optr;     // relations between processes
 	 */
-    }
+    proc->state = PROC_UNINIT;
+    proc->pid = -1;
+    // proc->runs = 0;
+    // proc->kstack = 0;
+    // proc->need_resched = 0;
+    // proc->parent = NULL;
+    proc->mm = NULL;
+    // memset(&proc->context, 0, sizeof(proc->context));
+    // proc->tf = NULL; // TODO context and tf, what is the difference, and how to create this line
+    proc->cr3 = boot_cr3;
+    // proc->flags = 0; // TODO no clear description about this line
+    memset(proc->name, 0, sizeof(proc->name));
+  }
     return proc;
 }
 
@@ -403,6 +415,23 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
 	*    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
 	*    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
+    proc = alloc_proc();
+    if(proc == NULL) goto bad_fork_cleanup_proc;
+    //    2. call setup_kstack to allocate a kernel stack for child process
+    if(setup_kstack(proc) < 0) goto bad_fork_cleanup_kstack;
+    proc->pid = get_pid();
+    //    3. call copy_mm to dup OR share mm according clone_flag
+    copy_mm(clone_flags, proc);
+    //    4. call copy_thread to setup tf & context in proc_struct
+    copy_thread(proc, stack, tf);
+    //    5. insert proc_struct into hash_list && proc_list
+    hash_proc(proc);
+    list_add(&proc_list, &proc->list_link);
+    //    6. call wakeup_proc to make the new child process RUNNABLE
+    wakeup_proc(proc);
+    //    7. set ret vaule using child proc's pid
+    ret = proc->pid;
+    nr_process ++;
 	
 fork_out:
     return ret;

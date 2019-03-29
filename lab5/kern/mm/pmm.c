@@ -375,6 +375,31 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
     }
     return NULL;          // (8) return page table entry
 #endif
+    // (1) find page directory entry
+    pde_t *pdep = PDX(la) + pgdir;
+    uintptr_t pa;
+    // (2) check if directory entry is not present
+    if (!(*pdep & PTE_P)) {
+      // (3) check if creating is needed, then alloc page for page table
+      if(!create){
+        cprintf("Oh shit !\n");
+        return NULL;
+      }
+      // CAUTION: this page is used for page table, not for common data page
+      struct Page * page = alloc_page();
+      // (4) set page reference
+      set_page_ref(page, 1);
+      // (5) get linear address of page
+      pa = page2pa(page);
+      // (6) clear page content using memset
+      memset((void *)(KADDR(pa)), 0, PGSIZE); // TODO I can not understand virtual and physical address
+      // (7) set page directory entry's permission
+      *pdep = pa | (PTE_P | PTE_U | PTE_W);
+    }else{
+      pa = PTE_ADDR(*pdep);
+    }
+    // (8) return page table entry
+    return (pte_t *)(PTE_ADDR(KADDR(pa))) + PTX(la);
 }
 
 //get_page - get related Page struct for linear address la using PDT pgdir
@@ -420,6 +445,24 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
                                   //(6) flush tlb
     }
 #endif
+    //(1) check if this page table entry is present
+    if (*ptep | PTE_P) {     
+      //(2) find corresponding page to pte
+      struct Page *page = pte2page(*ptep);
+      //(3) decrease page reference
+      page_ref_dec(page);
+      //(4) and free this page when page reference reachs 0
+      if(page->ref == 0){
+        free_pages(page, 1);
+        //(5) clear second page table entry
+        // pgdir[PDX(la)] = 0; // we should clear first directory entry
+        // TODO fix this line, critical warning about this line
+        // we can get ptep by la and pgdir, so why there are two parameters
+        *ptep = 0;
+        //(6) flush tlb
+        tlb_invalidate(pgdir, la);
+      }
+    }
 }
 
 void
