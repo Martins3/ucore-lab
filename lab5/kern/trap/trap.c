@@ -57,15 +57,22 @@ idt_init(void) {
      //you should update your lab1 code (just add ONE or TWO lines of code), let user app to use syscall to get the service of ucore
      //so you should setup the syscall interrupt gate in here
      
-  // great at least we found the old code
-      extern uintptr_t __vectors[];
-      for (int i = 0; i < 256; ++i) {
-        uintptr_t DPL_FLAG = DPL_KERNEL;
-        if(i == 0x80)
-          DPL_FLAG = DPL_USER;
-        SETGATE(idt[i], 0, 0x08, __vectors[i], DPL_FLAG); // init syscall
-      }
-      lidt(&idt_pd);
+      // extern uintptr_t __vectors[];
+      // for (int i = 0; i < 256; ++i) {
+        // uintptr_t DPL_FLAG = DPL_KERNEL;
+        // if(i == 0x80)
+          // DPL_FLAG = DPL_USER;
+        // SETGATE(idt[i], 0, 0x08, __vectors[i], DPL_FLAG); // init syscall
+      // }
+      // lidt(&idt_pd);
+    extern uintptr_t __vectors[];
+    int i;
+    for (i = 0; i < sizeof(idt) / sizeof(struct gatedesc); i ++) {
+        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    }
+    SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    // TODO 相对于之前的试验，似乎并没有太大的变化
+    lidt(&idt_pd);
 }
 
 static const char *
@@ -233,6 +240,7 @@ trap_dispatch(struct trapframe *tf) {
         if(ticks == TICK_NUM){
           ticks = 0;
           print_ticks();
+          current->need_resched = 1;
         }
 
         /* LAB5 YOUR CODE */

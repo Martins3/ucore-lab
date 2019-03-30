@@ -111,11 +111,16 @@ alloc_proc(void) {
 	 */
     proc->state = PROC_UNINIT;
     proc->pid = -1;
+    proc->wait_state = WT_INTERRUPTED; // init this for idle proc
     // proc->runs = 0;
     // proc->kstack = 0;
     // proc->need_resched = 0;
     // proc->parent = NULL;
     proc->mm = NULL;
+
+    proc->cptr = NULL;
+    proc->yptr = NULL; 
+    proc->optr = NULL;
     // memset(&proc->context, 0, sizeof(proc->context));
     // proc->tf = NULL; // TODO context and tf, what is the difference, and how to create this line
     proc->cr3 = boot_cr3;
@@ -415,8 +420,11 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
 	*    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
 	*    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
+    //    1. call alloc_proc to allocate a proc_struct
     proc = alloc_proc();
     if(proc == NULL) goto bad_fork_cleanup_proc;
+    proc->parent = current;
+    proc->wait_state = 0;
     //    2. call setup_kstack to allocate a kernel stack for child process
     if(setup_kstack(proc) < 0) goto bad_fork_cleanup_kstack;
     proc->pid = get_pid();
@@ -426,12 +434,14 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     copy_thread(proc, stack, tf);
     //    5. insert proc_struct into hash_list && proc_list
     hash_proc(proc);
-    list_add(&proc_list, &proc->list_link);
+    // list_add(&proc_list, &proc->list_link);
+    set_links(proc);
+
     //    6. call wakeup_proc to make the new child process RUNNABLE
     wakeup_proc(proc);
     //    7. set ret vaule using child proc's pid
     ret = proc->pid;
-    nr_process ++;
+    // nr_process ++;
 	
 fork_out:
     return ret;
@@ -631,6 +641,12 @@ load_icode(unsigned char *binary, size_t size) {
      *          tf_eip should be the entry point of this binary program (elf->e_entry)
      *          tf_eflags should be set to enable computer to produce Interrupt
      */
+    tf->tf_cs = USER_CS;
+    tf->tf_ds = tf->tf_es = tf->tf_ss = USER_DS;
+    tf->tf_esp = USTACKTOP;
+    tf->tf_eip = elf->e_entry;
+    tf->tf_eflags |= FL_IF;
+
     ret = 0;
 out:
     return ret;
@@ -725,6 +741,7 @@ repeat:
     if (haskid) {
         current->state = PROC_SLEEPING;
         current->wait_state = WT_CHILD;
+        cprintf("Current process has child to wait\n");
         schedule();
         if (current->flags & PF_EXITING) {
             do_exit(-E_KILLED);
@@ -822,6 +839,7 @@ init_main(void *arg) {
         panic("create user_main failed.\n");
     }
 
+    cprintf("J8:init main is being execute !\n");
     while (do_wait(0, NULL) == 0) {
         schedule();
     }

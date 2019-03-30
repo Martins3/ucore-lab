@@ -496,9 +496,6 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
     ptep = get_pte(mm->pgdir, addr, 1);
 
     if (*ptep == 0) {
-      // TODO critical warning: permission, how to set that ?
-      // TODO question: why page fault doesn't have load disk
-      // TODO question: who trigger the syscall
       pgdir_alloc_page(mm->pgdir, addr, perm);
     } else {
     /*LAB3 EXERCISE 2: YOUR CODE
