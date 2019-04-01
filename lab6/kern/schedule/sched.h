@@ -42,6 +42,8 @@ struct run_queue {
   int max_time_slice;
   // For LAB6 ONLY
   skew_heap_entry_t *lab6_run_pool;
+  // 在使用优先队列的实现中表示当前优先队列的头元素，如果优先队列为空，则其指向空指针（NULL）。
+  // 之前使用的是run_list 来管理，当使用优先队列之后，所以需要使用新的指针的来位置
 };
 
 void sched_init(void);

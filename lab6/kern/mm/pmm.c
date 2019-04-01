@@ -458,7 +458,9 @@ page_remove_pte(pde_t *pgdir, uintptr_t la, pte_t *ptep) {
         // pgdir[PDX(la)] = 0; // we should clear first directory entry
         // TODO fix this line, critical warning about this line
         // we can get ptep by la and pgdir, so why there are two parameters
-        *ptep = 0;
+        // 当一个物理页没有被任何人使用，那么它就是内核映射才可以
+        *ptep = page2pa(page) | PTE_P | PTE_W;
+        // *ptep = page2pa(page) | PTE_P | PTE_W;
         //(6) flush tlb
         tlb_invalidate(pgdir, la);
       }

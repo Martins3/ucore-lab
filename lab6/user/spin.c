@@ -9,6 +9,7 @@ main(void) {
         cprintf("I am the child. spinning ...\n");
         while (1);
     }
+    cprintf("My pid is %x\n", pid);
     cprintf("I am the parent. Running the child...\n");
 
     yield();

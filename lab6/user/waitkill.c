@@ -21,8 +21,8 @@ loop(void) {
 
 void
 work(void) {
-    cprintf("child 2.\n");
     do_yield();
+    cprintf("child 2.\n");
     if (kill(parent) == 0) {
         cprintf("kill parent ok.\n");
         do_yield();

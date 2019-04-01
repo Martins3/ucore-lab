@@ -121,6 +121,13 @@ alloc_proc(void) {
      */
     proc->state = PROC_UNINIT;
     proc->pid = -1;
+
+    proc->rq = NULL;
+    list_init(&proc->run_link);
+    proc->time_slice = MAX_TIME_SLICE;
+    skew_heap_init(&(proc->lab6_run_pool));
+    proc->lab6_priority = 2;
+    proc->lab6_stride = 0;
     // proc->runs = 0;
     // proc->kstack = 0;
     // proc->need_resched = 0;
@@ -130,10 +137,8 @@ alloc_proc(void) {
     proc->cptr = NULL;
     proc->yptr = NULL; 
     proc->optr = NULL;
-    // memset(&proc->context, 0, sizeof(proc->context));
-    // proc->tf = NULL; // TODO context and tf, what is the difference, and how to create this line
     proc->cr3 = boot_cr3;
-    // proc->flags = 0; // TODO no clear description about this line
+    proc->flags = 0;
     memset(proc->name, 0, sizeof(proc->name));
     }
     return proc;
@@ -436,6 +441,7 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
     //    2. call setup_kstack to allocate a kernel stack for child process
     if(setup_kstack(proc) < 0) goto bad_fork_cleanup_kstack;
     proc->pid = get_pid();
+    // cprintf("create pid is %x\n", proc->pid);
     //    3. call copy_mm to dup OR share mm according clone_flag
     copy_mm(clone_flags, proc);
     //    4. call copy_thread to setup tf & context in proc_struct

@@ -1,3 +1,9 @@
 file bin/kernel
 target remote :1234
 break kern_init
+break proc.c:796
+/* break proc.c:do_kill */
+/* break trap.c:300 */
+/* break trapentry.S:47 */
+/* break forktree:main */
+/* watch ((struct trapframe *)0xc03fefb4)->tf_eip */
