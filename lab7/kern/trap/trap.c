@@ -17,7 +17,7 @@
 #include <sync.h>
 #include <proc.h>
 
-#define TICK_NUM 100
+#define TICK_NUM 10000
 
 static void print_ticks() {
     cprintf("%d ticks\n",TICK_NUM);
@@ -57,6 +57,13 @@ idt_init(void) {
      /* LAB5 YOUR CODE */ 
      //you should update your lab1 code (just add ONE or TWO lines of code), let user app to use syscall to get the service of ucore
      //so you should setup the syscall interrupt gate in here
+    extern uintptr_t __vectors[];
+    int i;
+    for (i = 0; i < sizeof(idt) / sizeof(struct gatedesc); i ++) {
+        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+    }
+    SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    lidt(&idt_pd);
 }
 
 static const char *
@@ -234,6 +241,12 @@ trap_dispatch(struct trapframe *tf) {
          * IMPORTANT FUNCTIONS:
 	     * run_timer_list
          */
+        ticks ++;
+        if(ticks == TICK_NUM){
+          ticks = 0;
+          print_ticks();
+        }
+        sched_class_proc_tick(current);
         break;
     case IRQ_OFFSET + IRQ_COM1:
         c = cons_getc();
@@ -269,7 +282,7 @@ trap_dispatch(struct trapframe *tf) {
  * the code in kern/trap/trapentry.S restores the old CPU state saved in the
  * trapframe and then uses the iret instruction to return from the exception.
  * */
-void
+struct trapframe *
 trap(struct trapframe *tf) {
     // dispatch based on what type of trap occurred
     // used for previous projects
@@ -295,5 +308,6 @@ trap(struct trapframe *tf) {
             }
         }
     }
+    return tf;
 }
 
