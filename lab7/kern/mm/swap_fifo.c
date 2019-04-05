@@ -68,8 +68,9 @@ _fifo_swap_out_victim(struct mm_struct *mm, struct Page ** ptr_page, int in_tick
      /*LAB3 EXERCISE 2: YOUR CODE*/ 
      //(1)  unlink the  earliest arrival page in front of pra_list_head qeueue
      //(2)  assign the value of *ptr_page to the addr of this page
-     memcpy(page2kva(npage), page2kva(page), PGSIZE);
-     page_insert(to, npage, start, perm);
+     list_entry_t * victim = list_next(head);
+     *ptr_page = le2page(victim, pra_page_link);
+     list_del(victim);
      return 0;
 }
 

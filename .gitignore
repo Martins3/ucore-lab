@@ -1,5 +1,7 @@
 # Prerequisites
 *.d
+*.log
+.ccls-cache
 
 # Object files
 *.o
@@ -51,13 +53,13 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-lab[0-6]/bin/*
-lab[0-6]/obj/*
+lab[0-8]/bin/*
+lab[0-8]/obj/*
 
 compile_commands.json
-lab[0-6]/GPATH
-lab[0-6]/GRTAGS
-lab[0-6]/GTAGS
+lab[0-8]/GPATH
+lab[0-8]/GRTAGS
+lab[0-8]/GTAGS
 
 .check_output.log
 .gdb.in

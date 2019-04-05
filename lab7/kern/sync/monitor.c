@@ -37,6 +37,14 @@ cond_signal (condvar_t *cvp) {
    *          }
    *       }
    */
+  if(cvp->count > 0) {
+    monitor_t * mt = cvp->owner;
+    mt->next_count ++;
+    up(&cvp->sem); 
+    down(&mt->next); // 为了保证monitor 中间只有一个进程是处于runable的
+    mt->next_count--;
+  }
+
    cprintf("cond_signal end: cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
 }
 
@@ -55,5 +63,14 @@ cond_wait (condvar_t *cvp) {
     *         wait(cv.sem);
     *         cv.count --;
     */
+   cvp->count ++;
+   monitor_t * mt = cvp->owner;
+   if(mt->next_count > 0)
+      up(&mt->next);
+   else
+      up(&mt->mutex);
+   down(&cvp->sem);
+   cvp->count --;
+
     cprintf("cond_wait end:  cvp %x, cvp->count %d, cvp->owner->next_count %d\n", cvp, cvp->count, cvp->owner->next_count);
 }
