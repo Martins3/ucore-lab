@@ -2,6 +2,7 @@
 *.d
 *.log
 .ccls-cache
+lab8/disk0
 
 # Object files
 *.o

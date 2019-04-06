@@ -123,6 +123,30 @@ alloc_proc(void) {
      *     uint32_t lab6_priority;                     // FOR LAB6 ONLY: the priority of process, set by lab6_set_priority(uint32_t)
      */
     //LAB8:EXERCISE2 YOUR CODE HINT:need add some code to init fs in proc_struct, ...
+    proc->state = PROC_UNINIT;
+    proc->pid = -1;
+    // proc->runs = 0;
+    // proc->kstack = 0;
+    // proc->need_resched = 0;
+    // proc->parent = NULL;
+    proc->rq = NULL;
+    list_init(&proc->run_link);
+    proc->time_slice = MAX_TIME_SLICE;
+    skew_heap_init(&(proc->lab6_run_pool));
+    proc->lab6_priority = 2;
+    proc->lab6_stride = 0;
+
+    proc->wait_state = WT_INTERRUPTED; // init this for idle proc
+    proc->mm = NULL;
+    proc->cptr = NULL;
+    proc->yptr = NULL; 
+    proc->optr = NULL;
+
+    // memset(&proc->context, 0, sizeof(proc->context));
+    // proc->tf = NULL; // TODO context and tf, what is the difference, and how to create this line
+    proc->cr3 = boot_cr3;
+    proc->flags = 0;
+    memset(proc->name, 0, sizeof(proc->name));
     }
     return proc;
 }
@@ -461,6 +485,24 @@ do_fork(uint32_t clone_flags, uintptr_t stack, struct trapframe *tf) {
 	*    update step 1: set child proc's parent to current process, make sure current process's wait_state is 0
 	*    update step 5: insert proc_struct into hash_list && proc_list, set the relation links of process
     */
+	  proc = alloc_proc();
+    if(proc == NULL) goto bad_fork_cleanup_proc;
+    proc->parent = current;
+    proc->wait_state = 0;
+    //    2. call setup_kstack to allocate a kernel stack for child process
+    if(setup_kstack(proc) < 0) goto bad_fork_cleanup_kstack;
+    proc->pid = get_pid();
+    //    3. call copy_mm to dup OR share mm according clone_flag
+    copy_mm(clone_flags, proc);
+    //    4. call copy_thread to setup tf & context in proc_struct
+    copy_thread(proc, stack, tf);
+    //    5. insert proc_struct into hash_list && proc_list
+    hash_proc(proc);
+    set_links(proc);
+    //    6. call wakeup_proc to make the new child process RUNNABLE
+    wakeup_proc(proc);
+    //    7. set ret vaule using child proc's pid
+    ret = proc->pid;
 	
 fork_out:
     return ret;
