@@ -392,7 +392,8 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
       // (5) get linear address of page
       pa = page2pa(page);
       // (6) clear page content using memset
-      memset((void *)(KADDR(pa)), 0, PGSIZE); // TODO I can not understand virtual and physical address
+      // 通过memset 保证所有的pte都是 0
+      memset((void *)(KADDR(pa)), 0, PGSIZE);
       // (7) set page directory entry's permission
       *pdep = pa | (PTE_P | PTE_U | PTE_W);
     }else{

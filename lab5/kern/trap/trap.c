@@ -208,7 +208,6 @@ trap_dispatch(struct trapframe *tf) {
 
     switch (tf->tf_trapno) {
     case T_PGFLT:  //page fault
-        panic(" !!!!!! we can page fault !");
         if ((ret = pgfault_handler(tf)) != 0) {
             print_trapframe(tf);
             if (current == NULL) {
