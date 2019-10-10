@@ -841,8 +841,6 @@ user_main(void *arg) {
 // init_main - the second kernel thread used to create user_main kernel threads
 static int
 init_main(void *arg) {
-    size_t nr_free_pages_store = nr_free_pages();
-    size_t kernel_allocated_store = kallocated();
 
     int pid = kernel_thread(user_main, NULL, 0);
     if (pid <= 0) {

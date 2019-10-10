@@ -131,6 +131,6 @@ static inline int page_ref_dec(struct Page *page) {
   return page->ref;
 }
 
-extern char bootstack[], bootstacktop[];
+extern char bootstack[], bootstacktop[]; // @todo 龟龟，启动时间的stack设置方法是什么，stack
 
 #endif /* !__KERN_MM_PMM_H__ */

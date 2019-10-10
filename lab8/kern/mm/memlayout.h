@@ -3,6 +3,7 @@
 
 /* This file contains the definitions for memory management in our OS. */
 
+// @todo 那些是x86的内容，那些是amd64的内容
 /* global segment number */
 #define SEG_KTEXT 1
 #define SEG_KDATA 2

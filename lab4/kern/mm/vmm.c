@@ -164,6 +164,8 @@ static void
 check_vmm(void) {
     size_t nr_free_pages_store = nr_free_pages();
     
+    // char c = getchar();
+    // cprintf("we get the keyboard %c", c);
     check_vma_struct();
     check_pgfault();
 
@@ -249,7 +251,7 @@ check_pgfault(void) {
 
     insert_vma_struct(mm, vma);
 
-    uintptr_t addr = 0x100;
+    uintptr_t addr = 0x120;
     assert(find_vma(mm, addr) == vma);
 
     int i, sum = 0;
@@ -300,6 +302,7 @@ volatile unsigned int pgfault_num=0;
  */
 int
 do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
+    cprintf("!!!!!!!! caught pgfault at : %p", addr);
     int ret = -E_INVAL;
     //try to find a vma which include addr
     struct vma_struct *vma = find_vma(mm, addr);

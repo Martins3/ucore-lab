@@ -2,6 +2,7 @@
 #include <list.h>
 #include <string.h>
 #include <default_pmm.h>
+#include <stdio.h>
 
 /*  In the First Fit algorithm, the allocator keeps a list of free blocks
  * (known as the free list). Once receiving a allocation request for memory,
@@ -159,6 +160,21 @@ default_free_pages(struct Page *base, size_t n) {
     assert(n > 0);
     struct Page *p = base;
     for (; p != base + n; p ++) {
+       if(!(!PageReserved(p) && !PageProperty(p))){
+         cprintf("print soem helpful information before crash\n");
+         cprintf(" PageReserved : %d\n", (!PageReserved(p)) == 1);
+         cprintf(" PageProperty: %d\n", (!PageProperty(p)) == 1);
+
+          list_entry_t *le = list_next(&free_list);
+          while (le != &free_list) {
+              p = le2page(le, page_link);
+              le = list_next(le);
+              cprintf("%u ", p->property);
+          }
+          cprintf("==> %d \n", nr_free);
+       }
+
+      
         assert(!PageReserved(p) && !PageProperty(p));
         p->flags = 0;
         set_page_ref(p, 0);

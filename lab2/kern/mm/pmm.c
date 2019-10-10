@@ -193,6 +193,8 @@ page_init(void) {
     struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
     uint64_t maxpa = 0;
 
+    // 查看输出其实内容很简单了，最后能够使用的空间其实就是只有两个, 一个是1M 之前，一个是1M 之后的128M 的空间
+    // 而且其实整个读取过程中间确定maxpa 是什么
     cprintf("e820map:\n");
     int i;
     for (i = 0; i < memmap->nr_map; i ++) {
@@ -209,6 +211,7 @@ page_init(void) {
         maxpa = KMEMSIZE;
     }
 
+    // 由于链接脚本的控制，导致一定是一个连续空间被使用
     // fuck it ld again, I can not understand this
     // end and eend is lower and upper bound of bss
     extern char end[];

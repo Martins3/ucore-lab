@@ -10,8 +10,7 @@
  *                initialize io_offset as desired;
  *                initialize io_resid to the total amount of data that can be transferred through this io.
  */
-struct iobuf *
-iobuf_init(struct iobuf *iob, void *base, size_t len, off_t offset) {
+struct iobuf * iobuf_init(struct iobuf *iob, void *base, size_t len, off_t offset) {
     iob->io_base = base;
     iob->io_offset = offset;
     iob->io_len = iob->io_resid = len;

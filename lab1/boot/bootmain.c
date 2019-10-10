@@ -91,6 +91,10 @@ void bootmain(void) {
 
   struct proghdr *ph, *eph;
 
+  // TODO
+  // 1. 0xFFFFFF 的含义是什么 ? 24 位的含义 ?
+  // 2. 如果内核现在的地址都是在低16M 位置，那么线性地址空间怎么可能映射的过来啊!
+
   // load each program segment (ignores ph flags)
   ph = (struct proghdr *)((uintptr_t)ELFHDR + ELFHDR->e_phoff);
   eph = ph + ELFHDR->e_phnum;
@@ -104,6 +108,7 @@ void bootmain(void) {
   ((void (*)(void))(ELFHDR->e_entry & 0xFFFFFF))();
 
 bad:
+  // TODO bad 的含义
   outw(0x8A00, 0x8A00);
   outw(0x8A00, 0x8E00);
 

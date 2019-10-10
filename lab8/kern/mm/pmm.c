@@ -83,7 +83,7 @@ static struct segdesc gdt[] = {
     [SEG_KDATA] = SEG(STA_W, 0x0, 0xFFFFFFFF, DPL_KERNEL),
     [SEG_UTEXT] = SEG(STA_X | STA_R, 0x0, 0xFFFFFFFF, DPL_USER),
     [SEG_UDATA] = SEG(STA_W, 0x0, 0xFFFFFFFF, DPL_USER),
-    [SEG_TSS]   = SEG_NULL,
+    [SEG_TSS]   = SEG_NULL, // @todo 为什么唯独tss 不可以静态赋值
 };
 
 static struct pseudodesc gdt_pd = {
@@ -101,13 +101,13 @@ static void check_boot_pgdir(void);
 static inline void
 lgdt(struct pseudodesc *pd) {
     asm volatile ("lgdt (%0)" :: "r" (pd));
-    asm volatile ("movw %%ax, %%gs" :: "a" (USER_DS));
-    asm volatile ("movw %%ax, %%fs" :: "a" (USER_DS));
+    asm volatile ("movw %%ax, %%gs" :: "a" (USER_DS)); //@todo 检查一下这些寄存器的作用是什么
+    asm volatile ("movw %%ax, %%fs" :: "a" (USER_DS)); //@todo 曾经我记得起作用是作为gdt 的下标使用的
     asm volatile ("movw %%ax, %%es" :: "a" (KERNEL_DS));
     asm volatile ("movw %%ax, %%ds" :: "a" (KERNEL_DS));
     asm volatile ("movw %%ax, %%ss" :: "a" (KERNEL_DS));
     // reload cs
-    asm volatile ("ljmp %0, $1f\n 1:\n" :: "i" (KERNEL_CS));
+    asm volatile ("ljmp %0, $1f\n 1:\n" :: "i" (KERNEL_CS)); //@todo ljmp的尚且不是非常的清楚，目前怀疑这条指令的操作是: cs 设置为KERNEL_CS 同时将让cs:ip 的数值设置设置为标号，如果直接就是设置cs,为什么设置方式不和上面的方法相同。
 }
 
 /* *
@@ -124,7 +124,7 @@ load_esp0(uintptr_t esp0) {
 static void
 gdt_init(void) {
     // set boot kernel stack and default SS0
-    load_esp0((uintptr_t)bootstacktop);
+    load_esp0((uintptr_t)bootstacktop); // 初始化的意义是什么
     ts.ts_ss0 = KERNEL_DS;
 
     // initialize the TSS filed of the gdt
@@ -203,7 +203,7 @@ nr_free_pages(void) {
 /* pmm_init - initialize the physical memory management */
 static void
 page_init(void) {
-    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE);
+    struct e820map *memmap = (struct e820map *)(0x8000 + KERNBASE); // @todo 这种事情不是bios 来处理的吗 ? 为什么变成 memory 启动的事情
     uint64_t maxpa = 0;
 
     cprintf("e820map:\n");
@@ -221,15 +221,17 @@ page_init(void) {
     if (maxpa > KMEMSIZE) {
         maxpa = KMEMSIZE;
     }
+    // 上面for循环获取物理地址上限，仅仅是为了为page确定项目数值确定数值而已。
 
     extern char end[];
 
     npage = maxpa / PGSIZE;
-    pages = (struct Page *)ROUNDUP((void *)end, PGSIZE);
+    pages = (struct Page *)ROUNDUP((void *)end, PGSIZE); // 数值紧紧的跟在代码段后面
 
     for (i = 0; i < npage; i ++) {
         SetPageReserved(pages + i);
     }
+
 
     uintptr_t freemem = PADDR((uintptr_t)pages + sizeof(struct Page) * npage);
 
@@ -237,7 +239,7 @@ page_init(void) {
         uint64_t begin = memmap->map[i].addr, end = begin + memmap->map[i].size;
         if (memmap->map[i].type == E820_ARM) {
             if (begin < freemem) {
-                begin = freemem;
+                begin = freemem; // 紧紧处理可以被buddy system 处理的代码
             }
             if (end > KMEMSIZE) {
                 end = KMEMSIZE;
@@ -317,7 +319,7 @@ pmm_init(void) {
     // linear_addr KERNBASE ~ KERNBASE + KMEMSIZE = phy_addr 0 ~ KMEMSIZE
     boot_map_segment(boot_pgdir, KERNBASE, KMEMSIZE, 0, PTE_W);
 
-    // Since we are using bootloader's GDT,
+    // Since we are using bootloader's GDT, // @todo bootloader 的gdt 什么时候load 的
     // we should reload gdt (second time, the last time) to get user segments and the TSS
     // map virtual_addr 0 ~ 4G = linear_addr 0 ~ 4G
     // then set kernel stack (ss:esp) in TSS, setup TSS in gdt, load TSS

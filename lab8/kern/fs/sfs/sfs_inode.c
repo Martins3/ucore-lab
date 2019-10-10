@@ -596,9 +596,30 @@ sfs_io_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, void *buf, off_t offset
 	 *               Rd/Wr size = (nblks != 0) ? (SFS_BLKSIZE - blkoff) : (endpos - offset)
 	 * (2) Rd/Wr aligned blocks 
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_block_op
-     * (3) If end position isn't aligned with the last block, Rd/Wr some content from begin to the (endpos % SFS_BLKSIZE) of the last block
+   * (3) If end position isn't aligned with the last block, Rd/Wr some content from begin to the (endpos % SFS_BLKSIZE) of the last block
 	 *       NOTICE: useful function: sfs_bmap_load_nolock, sfs_buf_op	
 	*/
+    // 非常的奇怪，如果采用其中，sfs_rwblock 的参数 blkno 实际上毫无意义
+    // 由于连续的磁盘块 实际上可能属于不同的文件。
+    //
+    // 此外，最终将会调用到sfs_rwblock_nolock 中间，每次初始化io_buf，有点奇怪
+    
+
+    // sfs_bmap_load_nolock(struct sfs_fs *sfs, struct sfs_inode *sin, uint32_t index, uint32_t *ino_store) {
+    blkoff = offset;
+
+    if((ret = sfs_bmap_load_nolock(sfs, sin, blkno, &ino)) != 0){
+      return ret; // 有可能goto out
+    }
+	  size = (nblks != 0) ? (SFS_BLKSIZE - blkoff) : (endpos - offset);
+
+    if((ret = sfs_buf_op(sfs, buf, size, blkno, blkoff)) != 0){
+      return ret; //
+    }
+    buf += size;
+
+
+
 out:
     *alenp = alen;
     if (offset + alen > sin->din->size) {

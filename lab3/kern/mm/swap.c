@@ -202,7 +202,7 @@ check_swap(void)
      check_mm_struct = mm;
 
      pde_t *pgdir = mm->pgdir = boot_pgdir;
-     // what is meaning of this line
+
      assert(pgdir[0] == 0);
 
      // create one vma

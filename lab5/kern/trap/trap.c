@@ -68,11 +68,12 @@ idt_init(void) {
     extern uintptr_t __vectors[];
     int i;
     for (i = 0; i < sizeof(idt) / sizeof(struct gatedesc); i ++) {
-        SETGATE(idt[i], 0, GD_KTEXT, __vectors[i], DPL_KERNEL);
+        SETGATE(idt[i], 1, GD_KTEXT, __vectors[i], DPL_KERNEL);
     }
-    SETGATE(idt[T_SYSCALL], 1, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
+    SETGATE(idt[T_SYSCALL], 0, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
     // TODO 相对于之前的试验，似乎并没有太大的变化
     lidt(&idt_pd);
+    int a = 1 / 0;
 }
 
 static const char *
@@ -207,6 +208,7 @@ trap_dispatch(struct trapframe *tf) {
 
     switch (tf->tf_trapno) {
     case T_PGFLT:  //page fault
+        panic(" !!!!!! we can page fault !");
         if ((ret = pgfault_handler(tf)) != 0) {
             print_trapframe(tf);
             if (current == NULL) {

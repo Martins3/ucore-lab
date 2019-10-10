@@ -89,7 +89,7 @@ static inline void lock_mm(struct mm_struct *mm) {
   if (mm != NULL) {
     down(&(mm->mm_sem));
     if (current != NULL) {
-      mm->locked_by = current->pid;
+      mm->locked_by = current->pid; // @todo mm 每一个进程都是一一对应的才对吧，什么情况出现 mm 被其他进程使用
     }
   }
 }

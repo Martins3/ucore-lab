@@ -21,6 +21,9 @@ get_fd_array(void) {
     return filesp->fd_array;
 }
 
+// 仅仅被fs.c 中间  struct files_struct * files_create(void) 调用，
+// 既然 fd_array 的偏移就是fd，那么为什么还需要赋值。
+
 // fd_array_init - initialize the open files table
 void
 fd_array_init(struct file *fd_array) {
@@ -32,6 +35,9 @@ fd_array_init(struct file *fd_array) {
     }
 }
 
+// 含有两种模式: 指定fd 和　非指定fd 的模式
+// 前者顺序查找，再次说明fd 和　偏移一一对应的。
+// 后者检查，如果没有返回
 // fs_array_alloc - allocate a free file item (with FD_NONE status) in open files table
 static int
 fd_array_alloc(int fd, struct file **file_store) {
@@ -73,6 +79,7 @@ fd_array_free(struct file *file) {
     file->status = FD_NONE;
 }
 
+// 所以fd_array_alloc 各自在什么时候使用
 static void
 fd_array_acquire(struct file *file) {
     assert(file->status == FD_OPENED);
@@ -108,6 +115,7 @@ fd_array_close(struct file *file) {
     }
 }
 
+// 仅仅被 fs.c 中间的　dup_files　调用，该函数进一步仅仅在fork 的时候被调用
 //fs_array_dup - duplicate file 'from'  to file 'to'
 void
 fd_array_dup(struct file *to, struct file *from) {
@@ -122,6 +130,7 @@ fd_array_dup(struct file *to, struct file *from) {
     fd_array_open(to);
 }
 
+// 确认无疑，fd 和files_array 的偏移量一一对应
 // fd2file - use fd as index of fd_array, return the array item (file)
 static inline int
 fd2file(int fd, struct file **file_store) {
@@ -152,6 +161,9 @@ file_testfd(int fd, bool readable, bool writable) {
     return 1;
 }
 
+// 另一部分内容: 向上层暴露的函数接口
+
+// 调用VFS 接口，获取其中inode
 // open file
 int
 file_open(char *path, uint32_t open_flags) {

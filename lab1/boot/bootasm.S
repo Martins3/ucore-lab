@@ -75,15 +75,12 @@ spin:
     jmp spin
 
 # Bootstrap GDT
-# TODO .p2align is what ?
-# TODO we should read the gdt table and find out the structure
 .p2align 2                                          # force 4 byte alignment
 gdt:
     SEG_NULLASM                                     # null seg
     SEG_ASM(STA_X|STA_R, 0x0, 0xffffffff)           # code seg for bootloader and kernel
     SEG_ASM(STA_W, 0x0, 0xffffffff)                 # data seg for bootloader and kernel
 
-# TODO why is sizeof(gdt)-1 RTFM
 gdtdesc:
     .word 0x17                                      # sizeof(gdt) - 1
     .long gdt                                       # address gdt

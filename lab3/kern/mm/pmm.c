@@ -376,14 +376,13 @@ get_pte(pde_t *pgdir, uintptr_t la, bool create) {
       // (5) get linear address of page
       pa = page2pa(page);
       // (6) clear page content using memset
-      memset((void *)(KADDR(pa)), 0, PGSIZE); // TODO I can not understand virtual and physical address
+      memset((void *)(KADDR(pa)), 0, PGSIZE);
       // (7) set page directory entry's permission
       *pdep = pa | (PTE_P | PTE_U | PTE_W);
     }else{
       pa = PTE_ADDR(*pdep);
     }
     // (8) return page table entry
-    // TODO so why should add KADDR
     return (pte_t *)(PTE_ADDR(KADDR(pa))) + PTX(la);
 }
 

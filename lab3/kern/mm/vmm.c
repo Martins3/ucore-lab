@@ -411,7 +411,6 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
         page_insert(mm->pgdir, page, addr,  perm);
         //(3) make the page swappable.
         swap_map_swappable(mm, addr, page, 0);
-        // TODO we can not 
         page->pra_vaddr = addr;
     } else {
         cprintf("no swap_init_ok but ptep is %x, failed\n",*ptep);

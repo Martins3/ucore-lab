@@ -15,7 +15,7 @@ static void lab1_switch_test(void);
 
 int kern_init(void) {
   extern char edata[], end[];
-  memset(edata, 0, end - edata); // TODO why we should clear this area
+  memset(edata, 0, end - edata); // 手动清空BSS,以前都是操作系统帮忙清空的
 
   cons_init(); // init the console
 
@@ -36,7 +36,7 @@ int kern_init(void) {
 
   // LAB1: CAHLLENGE 1 If you try to do it, uncomment lab1_switch_test()
   // user/kernel mode switch test
-  // lab1_switch_test();
+  lab1_switch_test();
 
   /* do nothing */
   while (1);

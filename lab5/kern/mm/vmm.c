@@ -252,8 +252,12 @@ vmm_init(void) {
 // check_vmm - check correctness of vmm
 static void
 check_vmm(void) {
+
     size_t nr_free_pages_store = nr_free_pages();
-    
+
+    // char c = getchar();
+    // cprintf("WTF : %c\n", c);
+
     check_vma_struct();
     check_pgfault();
 
@@ -353,6 +357,7 @@ check_pgfault(void) {
     assert(sum == 0);
 
     page_remove(pgdir, ROUNDDOWN(addr, PGSIZE));
+    assert(pgdir[0] == 0);
     free_page(pde2page(pgdir[0]));
     pgdir[0] = 0;
 
@@ -493,10 +498,13 @@ do_pgfault(struct mm_struct *mm, uint32_t error_code, uintptr_t addr) {
         }
    }
 #endif
-    ptep = get_pte(mm->pgdir, addr, 1);
-
-    if (*ptep == 0) {
+    ptep = get_pte(mm->pgdir, addr, 0);
+    if (ptep == NULL) {
       pgdir_alloc_page(mm->pgdir, addr, perm);
+      panic("           !!!!!! how could this be possible");
+      if(addr == 0x0){
+        cprintf("       !!!!!!!!!!! malloc for %x", ptep);
+      }
     } else {
     /*LAB3 EXERCISE 2: YOUR CODE
     * Now we think this pte is a swap entry, we should load data from disk to a page with phy addr,
