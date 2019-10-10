@@ -73,7 +73,7 @@ idt_init(void) {
     SETGATE(idt[T_SYSCALL], 0, GD_KTEXT, __vectors[T_SYSCALL], DPL_USER);
     // TODO 相对于之前的试验，似乎并没有太大的变化
     lidt(&idt_pd);
-    int a = 1 / 0;
+    // int a = 1 / 0;
 }
 
 static const char *
