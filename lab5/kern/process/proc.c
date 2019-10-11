@@ -273,6 +273,7 @@ kernel_thread(int (*fn)(void *), void *arg, uint32_t clone_flags) {
     tf.tf_regs.reg_ebx = (uint32_t)fn;
     tf.tf_regs.reg_edx = (uint32_t)arg;
     tf.tf_eip = (uint32_t)kernel_thread_entry;
+    // 实际上，iret 对于同RPL的iret的处理就是类ret的处理，根本不在乎ss指令!
     return do_fork(clone_flags | CLONE_VM, 0, &tf);
 }
 
@@ -546,6 +547,7 @@ load_icode(unsigned char *binary, size_t size) {
     struct proghdr *ph_end = ph + elf->e_phnum;
     for (; ph < ph_end; ph ++) {
     //(3.4) find every program section headers
+    // 看来对于什么叫做加载到内存
         if (ph->p_type != ELF_PT_LOAD) {
             continue ;
         }
@@ -587,6 +589,7 @@ load_icode(unsigned char *binary, size_t size) {
         }
 
       //(3.6.2) build BSS section of binary program
+      // 因为可能p_memsz 大于 p_filesz 所以只是需要使用很简单的操作
         end = ph->p_va + ph->p_memsz;
         if (start < la) {
             /* ph->p_memsz == ph->p_filesz */
@@ -896,7 +899,9 @@ cpu_idle(void) {
     while (1) {
         if (current->need_resched) {
             schedule();
+        }else{
+          // idle 会执行 while 但是时钟中断会打断
+          // panic("idle process stuck !");
         }
     }
 }
-

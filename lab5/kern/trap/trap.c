@@ -283,7 +283,6 @@ trap_dispatch(struct trapframe *tf) {
  * trap - handles or dispatches an exception/interrupt. if and when trap() returns,
  * the code in kern/trap/trapentry.S restores the old CPU state saved in the
  * trapframe and then uses the iret instruction to return from the exception.
- * FIXME 我开始怀疑，之前才此处填写的代码都是含有问题的。
  * */
 struct trapframe *
 trap(struct trapframe *tf) {
