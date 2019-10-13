@@ -5,6 +5,8 @@
 
 static bool is_panic = 0;
 
+void print_stackframe(void);
+
 /* *
  * __panic - __panic is called on unresolvable fatal errors. it prints
  * "panic: 'message'", and then enters the kernel monitor.

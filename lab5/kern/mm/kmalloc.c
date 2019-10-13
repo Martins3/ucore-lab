@@ -62,6 +62,7 @@ struct slob_block {
 };
 typedef struct slob_block slob_t;
 
+// 对其的基础为 8byte
 #define SLOB_UNIT sizeof(slob_t)
 #define SLOB_UNITS(size) (((size) + SLOB_UNIT - 1)/SLOB_UNIT)
 #define SLOB_ALIGN L1_CACHE_BYTES
@@ -107,10 +108,13 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align)
 	prev = slobfree;
 	for (cur = prev->next; ; prev = cur, cur = cur->next) {
 		if (align) {
-			aligned = (slob_t *)ALIGN((unsigned long)cur, align);
-			delta = aligned - cur;
+			aligned = (slob_t *)ALIGN((unsigned long)cur, align); // 对齐总是向上取证
+			delta = aligned - cur; // 对齐之后相对于之前的unit 的个数
 		}
 		if (cur->units >= units + delta) { /* room enough? */
+      // 由于对齐的原因，将之前没有对齐的部分形成一个新的节点
+      // 如果align 不是 8 的倍数，很难受，但是应该不会如此设置
+      // 分配char 支持入口对齐，多余的没有使用
 			if (delta) { /* need to fragment head to align? */
 				aligned->units = cur->units - delta;
 				aligned->next = cur->next;
@@ -133,6 +137,7 @@ static void *slob_alloc(size_t size, gfp_t gfp, int align)
 			spin_unlock_irqrestore(&slob_lock, flags);
 			return cur;
 		}
+    // slob 最多只能控制一个page
 		if (cur == slobfree) {
 			spin_unlock_irqrestore(&slob_lock, flags);
 
@@ -161,12 +166,16 @@ static void slob_free(void *block, int size)
 	if (size)
 		b->units = SLOB_UNITS(size);
 
+  // 和malloc 没有什么区别 ?
+  // 比较地址 ?
 	/* Find reinsertion point */
 	spin_lock_irqsave(&slob_lock, flags);
 	for (cur = slobfree; !(b > cur && b < cur->next); cur = cur->next)
+    // 最后一个节点 ?
 		if (cur >= cur->next && (b > cur || b < cur->next))
 			break;
 
+  // 测试是不是可以连接起来的
 	if (b + b->units == cur->next) {
 		b->units += cur->next->units;
 		b->next = cur->next->next;

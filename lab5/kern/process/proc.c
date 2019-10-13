@@ -111,20 +111,20 @@ alloc_proc(void) {
 	 */
     proc->state = PROC_UNINIT;
     proc->pid = -1;
-    proc->wait_state = WT_INTERRUPTED; // init this for idle proc
-    // proc->runs = 0;
+    proc->wait_state = WT_INTERRUPTED; // 并没有初始化的必要，而是
+    proc->runs = 0;
     // proc->kstack = 0;
-    // proc->need_resched = 0;
-    // proc->parent = NULL;
+    proc->need_resched=0;
+    proc->parent = NULL;
     proc->mm = NULL;
 
     proc->cptr = NULL;
     proc->yptr = NULL; 
     proc->optr = NULL;
-    // memset(&proc->context, 0, sizeof(proc->context));
-    // proc->tf = NULL; // TODO context and tf, what is the difference, and how to create this line
+    memset(&proc->context, 0, sizeof(proc->context));
+    proc->tf = NULL;
     proc->cr3 = boot_cr3;
-    // proc->flags = 0; // TODO no clear description about this line
+    proc->flags = 0; // 上面很多都是没有必要初始化的!
     memset(proc->name, 0, sizeof(proc->name));
   }
     return proc;
@@ -744,7 +744,6 @@ repeat:
     if (haskid) {
         current->state = PROC_SLEEPING;
         current->wait_state = WT_CHILD;
-        cprintf("Current process has child to wait\n");
         schedule();
         if (current->flags & PF_EXITING) {
             do_exit(-E_KILLED);
@@ -842,7 +841,6 @@ init_main(void *arg) {
         panic("create user_main failed.\n");
     }
 
-    cprintf("J8:init main is being execute !\n");
     while (do_wait(0, NULL) == 0) {
         schedule();
     }
@@ -897,6 +895,16 @@ proc_init(void) {
 void
 cpu_idle(void) {
     while (1) {
+
+struct slob_block {
+	int units;
+	struct slob_block *next;
+};
+typedef struct slob_block slob_t;
+
+#define SLOB_UNIT sizeof(slob_t)
+        cprintf("%d", SLOB_UNIT);
+        panic("test panic");
         if (current->need_resched) {
             schedule();
         }else{

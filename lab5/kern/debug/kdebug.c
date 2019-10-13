@@ -355,8 +355,9 @@ print_stackframe(void) {
     cprintf("args: 0x%08x 0x%08x 0x%08x 0x%08x", *((uint32_t *)(ebp) + 2),
             *((uint32_t *)(ebp) + 3), *((uint32_t *)(ebp) + 4), *((uint32_t *)(ebp) + 5));
     cprintf("\n");
-    print_debuginfo(eip - 1);
+    print_debuginfo(eip - 1); // 保存的下一条指令，所以回退一下
     // update the eip and ebp to get the 
+    // 当前的ebp 指针是整个stack的根基，获取参数+ 获取局部变量做差
     eip = *((uint32_t *)(ebp) + 1);
     ebp = *((uint32_t *)(ebp));
     if(ebp == 0) break;
