@@ -1,6 +1,8 @@
 #ifndef __LIBS_SKEW_HEAP_H__
 #define __LIBS_SKEW_HEAP_H__
 
+#include <defs.h>
+
 struct skew_heap_entry {
   struct skew_heap_entry *parent, *left, *right;
 };
