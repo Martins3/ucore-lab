@@ -155,16 +155,19 @@ run_timer_list(void) {
             timer_t *timer = le2timer(le, timer_link);
             assert(timer->expires != 0);
             timer->expires --;
+            // 所有到期的都会被触发
             while (timer->expires == 0) {
                 le = list_next(le);
                 struct proc_struct *proc = timer->proc;
                 if (proc->wait_state != 0) {
+                    // wait_state 需要保证的，有的等待状态拒绝被中断提醒
                     assert(proc->wait_state & WT_INTERRUPTED);
                 }
                 else {
                     warn("process %d's wait_state == 0.\n", proc->pid);
                 }
                 wakeup_proc(proc);
+                // 双倍删除，如果此时不删除，那么进入到死循环中间!
                 del_timer(timer);
                 if (le == &timer_list) {
                     break;

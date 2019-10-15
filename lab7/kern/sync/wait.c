@@ -49,6 +49,7 @@ wait_queue_prev(wait_queue_t *queue, wait_t *wait) {
     return NULL;
 }
 
+// 用于查询一个wait 如果没有返回null
 wait_t *
 wait_queue_first(wait_queue_t *queue) {
     list_entry_t *le = list_next(&(queue->wait_head));
@@ -77,6 +78,8 @@ wait_in_queue(wait_t *wait) {
     return !list_empty(&(wait->wait_link));
 }
 
+// 本次试验用到的，将特定的wait_t 唤醒
+// 不存在部分试验的内容
 void
 wakeup_wait(wait_queue_t *queue, wait_t *wait, uint32_t wakeup_flags, bool del) {
     if (del) {
@@ -88,12 +91,14 @@ wakeup_wait(wait_queue_t *queue, wait_t *wait, uint32_t wakeup_flags, bool del) 
 
 void
 wakeup_first(wait_queue_t *queue, uint32_t wakeup_flags, bool del) {
+    // 将第一个阻塞者wakeup
     wait_t *wait;
     if ((wait = wait_queue_first(queue)) != NULL) {
         wakeup_wait(queue, wait, wakeup_flags, del);
     }
 }
 
+// 唤醒全部的queue
 void
 wakeup_queue(wait_queue_t *queue, uint32_t wakeup_flags, bool del) {
     wait_t *wait;
@@ -114,9 +119,9 @@ wakeup_queue(wait_queue_t *queue, uint32_t wakeup_flags, bool del) {
 void
 wait_current_set(wait_queue_t *queue, wait_t *wait, uint32_t wait_state) {
     assert(current != NULL);
-    wait_init(wait, current);
-    current->state = PROC_SLEEPING;
+    wait_init(wait, current); // 初始化wait节点
+    current->state = PROC_SLEEPING; // 初始化current 状态
     current->wait_state = wait_state;
-    wait_queue_add(queue, wait);
+    wait_queue_add(queue, wait); // 进入队列
 }
 

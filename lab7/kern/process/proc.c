@@ -935,6 +935,8 @@ do_sleep(unsigned int time) {
 
     schedule();
 
+    // 如果可以保证线程只能被 run_timer_list 触发，
+    // 那么下面一行没有必要! 一个timer 可以被重复删除!
     del_timer(timer);
     return 0;
 }

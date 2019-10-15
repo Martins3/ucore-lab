@@ -18,6 +18,9 @@ static __noinline void __up(semaphore_t *sem, uint32_t wait_state) {
     local_intr_save(intr_flag);
     {
         wait_t *wait;
+        // 保持FIFO结构
+
+        // up 如果含有等待的，那么唤醒，否则添加一个资源!
         if ((wait = wait_queue_first(&(sem->wait_queue))) == NULL) {
             sem->value ++;
         }
@@ -41,13 +44,17 @@ static __noinline uint32_t __down(semaphore_t *sem, uint32_t wait_state) {
     wait_current_set(&(sem->wait_queue), wait, wait_state);
     local_intr_restore(intr_flag);
 
+    // 我凉了
     schedule();
+    // 我又活了
 
     local_intr_save(intr_flag);
     wait_current_del(&(sem->wait_queue), wait);
     local_intr_restore(intr_flag);
 
     if (wait->wakeup_flags != wait_state) {
+        // 需要保证一定不会发生! 其实在此处的确毫无意义，因为和
+        // wakeup_flags 打交道的也只有 WT_KSEM
         return wait->wakeup_flags;
     }
     return 0;

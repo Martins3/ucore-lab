@@ -22,6 +22,8 @@ monitor_init (monitor_t * mtp, size_t num_cv) {
     }
 }
 
+// 进程不会同时挂在多个sem 上，因为总是先up 后 down
+
 // Unlock one of threads waiting on the condition variable. 
 void 
 cond_signal (condvar_t *cvp) {
@@ -37,11 +39,15 @@ cond_signal (condvar_t *cvp) {
    *          }
    *       }
    */
+   // 当没有需要唤醒的内容，直接通过
   if(cvp->count > 0) {
     monitor_t * mt = cvp->owner;
     mt->next_count ++;
-    up(&cvp->sem); 
-    down(&mt->next); // 为了保证monitor 中间只有一个进程是处于runable的
+    up(&cvp->sem);
+    down(&mt->next); 
+    // 为了保证monitor 中间只有一个进程是处于runable的
+    // 如果没有，up(&cvp->sem);将会导致 monitor 控制两个进程处于 runable ？
+    // 将signal而阻塞的 的换出去
     mt->next_count--;
   }
 
@@ -65,10 +71,13 @@ cond_wait (condvar_t *cvp) {
     */
    cvp->count ++;
    monitor_t * mt = cvp->owner;
+
+   // 同样的，在被阻塞之前，释放一个在由于signal 或者 使用monitor的内容
    if(mt->next_count > 0)
       up(&mt->next);
    else
       up(&mt->mutex);
+
    down(&cvp->sem);
    cvp->count --;
 
